@@ -36,6 +36,12 @@ export const DashboardContentForm = styled.div`
         background-color: #3183ff;
         padding: 12px 0;
         font-size: 18px;
+        cursor: pointer;
+        transition: all .4s;
+
+        &:hover {
+            background-color: #3127fa;
+        }
     }
 `
 

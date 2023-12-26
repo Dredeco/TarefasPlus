@@ -2,11 +2,84 @@ import Textarea from '@/components/textarea'
 import { GetServerSideProps } from 'next'
 import { getSession } from 'next-auth/react'
 import Head from 'next/head'
-import React from 'react'
+import React, { ChangeEvent, FormEvent, useState, useEffect } from 'react'
 import { FaShare, FaTrash } from 'react-icons/fa'
 import { DashboardCheckBoxArea, DashboardContainer, DashboardContent, DashboardContentForm, DashboardMain, TagContainer, Task, TaskContainer, TaskContent } from './styles'
+import { addDoc, collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
+import { db } from '@/services/firebaseConnection'
 
-export default function Dashboard() {
+interface HomeProps {
+    user: {
+        email: string
+    }
+}
+
+interface TaskProps {
+    id: string;
+    createdAt: Date;
+    public: boolean;
+    tarefa: string;
+    user: string;
+}
+
+export default function Dashboard({ user }: HomeProps) {
+    const [input, setInput] = useState('')
+    const [publicTask, setPublicTask] = useState(false)
+    const [tasks, setTasks] = useState<TaskProps[]>([])
+
+    useEffect(() => {
+        async function loadTarefas() {
+            const tarefasRef = collection(db, "tarefas");
+            const q = query(
+                tarefasRef,
+                orderBy("createdAt", "desc"),
+                where("user", "==", user.email)
+            )
+
+            onSnapshot(q, (snapshot) => {
+                let lista = [] as TaskProps[];
+
+                snapshot.forEach((doc) => {
+                    lista.push({
+                        id: doc.id,
+                        tarefa: doc.data().tarefa,
+                        createdAt: doc.data().createdAt,
+                        user: doc.data().user,
+                        public: doc.data().public
+                    })
+                })
+
+                setTasks(lista)
+            })
+        }
+
+        loadTarefas();
+    }, [user.email])
+
+    function handleChangePublic(event: ChangeEvent<HTMLInputElement>) {
+        setPublicTask(event.target.checked)
+    }
+
+    async function handleRegisterTask(event:FormEvent) {
+        event.preventDefault();
+
+        if (input === '') return;
+
+        try {
+            await addDoc(collection(db, "tarefas"), {
+                tarefa: input,
+                createdAt: new Date(),
+                user: user.email,
+                public: publicTask
+            })
+
+            setInput('')
+            setPublicTask(false)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     return (
         <DashboardContainer>
             <Head>
@@ -18,12 +91,18 @@ export default function Dashboard() {
                     <DashboardContentForm>
                         <h1>Qual sua tarefa?</h1>
 
-                        <form>
+                        <form onSubmit={handleRegisterTask}>
                             <Textarea 
                                 placeholder='Digite qual a sua tarefa'
+                                value={input}
+                                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setInput(event.target.value)}
                             />
                             <DashboardCheckBoxArea>
-                                <input type='checkbox' />
+                                <input 
+                                    type='checkbox' 
+                                    checked={publicTask}
+                                    onChange={handleChangePublic}
+                                />
                                 <label>Deixar tarefa pública?</label>
                             </DashboardCheckBoxArea>
                         
@@ -37,19 +116,22 @@ export default function Dashboard() {
                 <TaskContainer>
                     <h1>Minhas tarefas</h1>
 
-                    <Task>
-                        <TagContainer>
-                            <label>PUBLICO</label>
-                            <button>
-                                <FaShare 
-                                    size={22}
-                                    color='#3183ff'
-                                />
-                            </button>
-                        </TagContainer>
+                    {tasks.map((item) => (
+                        <Task key={item.id}>
+                            {item.public && (
+                                <TagContainer>
+                                    <label>PUBLICO</label>
+                                    <button>
+                                        <FaShare 
+                                            size={22}
+                                            color='#3183ff'
+                                        />
+                                    </button>
+                                </TagContainer>
+                            )}
 
                         <TaskContent>
-                            <p>Minha primeira tarefa de exemplo show demais!</p>
+                            <p>{item.tarefa}</p>
                             <button>
                                 <FaTrash 
                                     size={24}
@@ -57,7 +139,11 @@ export default function Dashboard() {
                                 />
                             </button>
                         </TaskContent>
-                    </Task>
+                        </Task>
+                    ))}
+
+                    
+
                 </TaskContainer>
             </DashboardMain>
 
@@ -77,6 +163,10 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
         }
     }
     return {
-        props: {},
+        props: {
+            user: {
+                email: session.user.email
+            }
+        },
     }
 }
