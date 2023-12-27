@@ -1,5 +1,5 @@
 import Textarea from '@/components/textarea'
-import { GetServerSideProps } from 'next'
+import { GetServerSideProps, InferGetServerSidePropsType } from 'next'
 import { getSession } from 'next-auth/react'
 import Head from 'next/head'
 import React, { ChangeEvent, FormEvent, useState, useEffect } from 'react'
@@ -152,7 +152,7 @@ interface TaskProps {
     user: string;
 }
 
-const Dashboard = ({ user }: HomeProps) => {
+const Dashboard = ({ user }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
     const [input, setInput] = useState('')
     const [publicTask, setPublicTask] = useState(false)
     const [tasks, setTasks] = useState<TaskProps[]>([])
@@ -163,7 +163,7 @@ const Dashboard = ({ user }: HomeProps) => {
             const q = query(
                 tarefasRef,
                 orderBy("createdAt", "desc"),
-                where("user", "==", user?.email)
+                where("user", "==", user.email)
             )
 
             onSnapshot(q, (snapshot) => {
@@ -282,8 +282,8 @@ const Dashboard = ({ user }: HomeProps) => {
 }
 export default Dashboard
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-    const session = await getSession({ req })
+export const getServerSideProps = (async ({req}) => {
+    const session = await getSession({req})
 
     if(!session?.user) {
         return {
@@ -296,8 +296,8 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     return {
         props: {
             user: {
-                email: session.user?.email
+                email: session.user.email
             }
         },
     }
-}
+}) satisfies GetServerSideProps
