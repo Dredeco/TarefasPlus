@@ -153,7 +153,7 @@ interface TaskProps {
     user: string;
 }
 
-export default function Dashboard({ user }: HomeProps) {
+const Dashboard = ({ user }: HomeProps) => {
     const [input, setInput] = useState('')
     const [publicTask, setPublicTask] = useState(false)
     const [tasks, setTasks] = useState<TaskProps[]>([])
@@ -282,7 +282,9 @@ export default function Dashboard({ user }: HomeProps) {
     )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+export default Dashboard
+
+const getServerSideProps: GetServerSideProps = async ({ req }) => {
     const session = await getSession({ req })
 
     if(!session?.user) {
