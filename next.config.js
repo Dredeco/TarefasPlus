@@ -4,7 +4,8 @@ const nextConfig = {
   compiler: {
     styledComponents: true
   },
-  output: "export"
+  output: "export",
+  distDir: './out'
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;

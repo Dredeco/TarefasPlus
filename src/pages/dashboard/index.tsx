@@ -163,7 +163,7 @@ const Dashboard = ({ user }: HomeProps) => {
             const q = query(
                 tarefasRef,
                 orderBy("createdAt", "desc"),
-                where("user", "==", user.email)
+                where("user", "==", user?.email)
             )
 
             onSnapshot(q, (snapshot) => {
@@ -280,10 +280,9 @@ const Dashboard = ({ user }: HomeProps) => {
         </DashboardContainer>
     )
 }
-
 export default Dashboard
 
-const getServerSideProps: GetServerSideProps = async ({ req }) => {
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     const session = await getSession({ req })
 
     if(!session?.user) {
@@ -297,7 +296,7 @@ const getServerSideProps: GetServerSideProps = async ({ req }) => {
     return {
         props: {
             user: {
-                email: session.user.email
+                email: session.user?.email
             }
         },
     }
