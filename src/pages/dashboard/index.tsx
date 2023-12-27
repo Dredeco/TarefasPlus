@@ -6,18 +6,17 @@ import React, { ChangeEvent, FormEvent, useState, useEffect } from 'react'
 import { FaShare, FaTrash } from 'react-icons/fa'
 import { addDoc, collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { db } from '@/services/firebaseConnection'
-
 import styled from "styled-components"
 
-export const DashboardContainer = styled.div`
+const DashboardContainer = styled.div`
     width: 100%;
 `
 
-export const DashboardMain = styled.main`
+const DashboardMain = styled.main`
     
 `
 
-export const DashboardContent = styled.section`
+const DashboardContent = styled.section`
     background-color: #0f0f0f;
     width: 100%;
     display: flex;
@@ -25,7 +24,7 @@ export const DashboardContent = styled.section`
     justify-content: center;
 `
 
-export const DashboardContentForm = styled.div`
+const DashboardContentForm = styled.div`
     max-width: 1024px;
     width: 100%;
     padding: 0 18px;
@@ -54,7 +53,7 @@ export const DashboardContentForm = styled.div`
     }
 `
 
-export const DashboardCheckBoxArea = styled.div`
+const DashboardCheckBoxArea = styled.div`
     margin: 14px 0;
 
     label {
@@ -68,7 +67,7 @@ export const DashboardCheckBoxArea = styled.div`
     }
 `
 
-export const TaskContainer = styled.section`
+const TaskContainer = styled.section`
     margin: 34px auto 0 auto;
     padding: 0 18px;
     width: 100%;
@@ -88,7 +87,7 @@ export const TaskContainer = styled.section`
     }
 `
 
-export const Task = styled.article`
+const Task = styled.article`
     margin-bottom: 14px;
     line-height: 150%;
     display: flex;
@@ -99,7 +98,7 @@ export const Task = styled.article`
     padding: 14px;
 `
 
-export const TagContainer = styled.div`
+const TagContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -121,7 +120,7 @@ export const TagContainer = styled.div`
     }
 `
 
-export const TaskContent = styled.div`
+const TaskContent = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -153,7 +152,7 @@ interface TaskProps {
     user: string;
 }
 
-export default function Dashboard({ user }: HomeProps) {
+const Dashboard = ({ user }: HomeProps) => {
     const [input, setInput] = useState('')
     const [publicTask, setPublicTask] = useState(false)
     const [tasks, setTasks] = useState<TaskProps[]>([])
@@ -282,7 +281,9 @@ export default function Dashboard({ user }: HomeProps) {
     )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+export default Dashboard
+
+const getServerSideProps: GetServerSideProps = async ({ req }) => {
     const session = await getSession({ req })
 
     if(!session?.user) {
