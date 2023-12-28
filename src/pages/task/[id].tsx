@@ -1,8 +1,11 @@
 import Textarea from "@/components/textarea";
 import { db } from "@/services/firebaseConnection";
-import { doc, getDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { GetServerSideProps } from "next"
+import { useSession } from "next-auth/react";
 import Head from "next/head"
+import { ChangeEvent, FormEvent, useState } from "react";
+import { FaTrash } from "react-icons/fa";
 import styled from "styled-components"
 
 const TaskContainer = styled.div`
@@ -61,8 +64,52 @@ const TaskCommentsContent = styled.section`
         transition: all .4s;
 
         &:hover {
-            filter: brightness(0.9);
+            background-color: #3127fa;
         }
+
+        &:disabled {
+            background-color: #5f9dfa;
+            cursor: not-allowed;
+        }
+    }
+`
+
+const CommentsContainer = styled.section`
+    width: 100%;
+    margin-top: 14px;
+
+    p {
+        margin-top: 14px;
+        white-space: pre-wrap;
+    }
+
+    h2 {
+        margin-bottom: 1rem;
+    }
+`
+
+const Comment = styled.article`
+    border: 1px solid #ddd;
+    padding: 14px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+`
+
+const HeadComment = styled.div`
+    display: flex;
+    align-items: center;
+
+    label {
+        background-color: #ccc;
+        padding: 4px 8px;
+        margin-right: 8px;
+        border-radius: 4px;
+    }
+
+    button {
+        border: 0;
+        background: transparent;
+        cursor: pointer;
     }
 `
 
@@ -73,10 +120,72 @@ interface TaskProps {
         public: boolean,
         user: string,
         taskId: string,
-    }
+    },
+    allComments: CommentProps[]
 }
 
-export default function Task({ item }: TaskProps) {
+interface CommentProps {
+    id: string,
+    comment: string,
+    taskId: string,
+    user: string,
+    name: string
+}
+
+export default function Task({ item, allComments }: TaskProps) {
+
+    const [input, setInput] = useState('')
+    const [comments, setComments] = useState<CommentProps[]>(allComments || [])
+    const { data: session } = useSession()
+
+    async function handleComment(event: FormEvent) {
+        event.preventDefault();
+
+        if(input === "") {
+            return
+        }
+
+        if(!session?.user?.email || !session?.user?.name) {
+            return
+        }
+
+        try {
+            const docRef = await addDoc(collection(db, "comments"), {
+                comment: input,
+                createdAt: new Date(),
+                user: session?.user?.email,
+                name: session?.user?.name,
+                taskId: item?.taskId
+            })
+
+
+            const data = {
+                id: docRef.id,
+                comment: input,
+                user: session?.user?.email,
+                name: session?.user?.name,
+                taskId: item?.taskId
+            }
+
+            setComments((oldItems) => [...oldItems, data])
+            setInput('')
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    async function handleDeleteComment(id: string) {
+        try {
+            const docRef = doc(db, "comments", id)
+            await deleteDoc(docRef)
+
+            const deleteComment = comments.filter((comment) => comment.id !== id)
+            setComments(deleteComment)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     return (
         <>
         <Head>
@@ -94,14 +203,40 @@ export default function Task({ item }: TaskProps) {
             <TaskCommentsContent>
                 <h2>Deixar comentário</h2>
 
-                <form>
+                <form onSubmit={handleComment}>
                     <Textarea 
+                        value={input}
+                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setInput(event.target.value)}
                         placeholder="Digite o seu comentário"
                     />
 
-                    <button>Enviar comentário</button>
+                    <button disabled={!session?.user}>Enviar comentário</button>
                 </form>
             </TaskCommentsContent>
+
+            <CommentsContainer>
+                <h2>Comentários</h2>
+                {comments.length === 0 && (
+                    <span>Nenhum comentário foi encontrado...</span>
+                )}
+
+                {comments.map((item) => (
+                <Comment key={item.id}>
+                    <HeadComment>
+                        <label>{item.name}</label>
+                        {item.user === session?.user?.email && (
+                            <button onClick={() => handleDeleteComment(item.id)}>
+                                <FaTrash
+                                    size={18}
+                                    color="#EA3140"
+                                />
+                            </button>
+                        )}
+                    </HeadComment>
+                    <p>{item.comment}</p>
+                </Comment>
+                ))}
+            </CommentsContainer>
         </TaskContainer>
         </>
     );
@@ -111,6 +246,20 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const id = params?.id as string;
 
     const docRef = doc(db, "tarefas", id)
+
+    const q = query(collection(db, "comments"), where("taskId", "==", id))
+    const snapshotComments = await getDocs(q)
+
+    let allComments: CommentProps[] = [];
+    snapshotComments.forEach((doc) => {
+        allComments.push({
+            id: doc.id,
+            comment: doc.data().comment,
+            user: doc.data().user,
+            name: doc.data().name,
+            taskId: doc.data().taskId
+        })
+    })
 
     const snapshot = await getDoc(docRef)
 
@@ -145,6 +294,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     return {
         props: {
             item: task,
+            allComments: allComments
         },
     }
 }
