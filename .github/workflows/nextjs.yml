@@ -91,5 +91,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Build with Next.js
-        run: npm run next start
+      - name: Start with Next.js
+        run:  ${{ steps.detect-package-manager.outputs.runner }} next start
