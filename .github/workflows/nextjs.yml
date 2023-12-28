@@ -92,4 +92,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       - name: Start with Next.js
-        run:  ${{ steps.detect-package-manager.outputs.runner }} next start
+        run:  ${{ steps.detect-package-manager.outputs.manager }} next start
