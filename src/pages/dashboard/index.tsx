@@ -1,12 +1,13 @@
 import Textarea from '@/components/textarea'
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next'
+import { GetServerSideProps, GetStaticProps, InferGetServerSidePropsType } from 'next'
 import { getSession } from 'next-auth/react'
 import Head from 'next/head'
 import React, { ChangeEvent, FormEvent, useState, useEffect } from 'react'
 import { FaShare, FaTrash } from 'react-icons/fa'
-import { addDoc, collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { db } from '@/services/firebaseConnection'
 import styled from "styled-components"
+import Link from 'next/link'
 
 const DashboardContainer = styled.div`
     width: 100%;
@@ -210,6 +211,20 @@ const Dashboard = ({ user }: InferGetServerSidePropsType<typeof getServerSidePro
         }
     }
 
+    async function handleShare(id: string) {
+        await navigator.clipboard.writeText(
+            `${process.env.NEXT_PUBLIC_URL}/task/${id}`
+        )
+
+        alert("URL copiada com sucesso!")
+    }
+
+    async function handleDeleteTask(id: string) {
+        const docRef = doc(db, "tarefas", id)
+
+        await deleteDoc(docRef)
+    }
+
     return (
         <DashboardContainer>
             <Head>
@@ -251,7 +266,7 @@ const Dashboard = ({ user }: InferGetServerSidePropsType<typeof getServerSidePro
                             {item.public && (
                                 <TagContainer>
                                     <label>PUBLICO</label>
-                                    <button>
+                                    <button onClick={() => handleShare(item.id)}>
                                         <FaShare 
                                             size={22}
                                             color='#3183ff'
@@ -261,8 +276,16 @@ const Dashboard = ({ user }: InferGetServerSidePropsType<typeof getServerSidePro
                             )}
 
                         <TaskContent>
-                            <p>{item.tarefa}</p>
-                            <button>
+
+                            {item.public ? (
+                                <Link href={`/task/${item.id}`}>
+                                    <p>{item.tarefa}</p>
+                                </Link>
+                            ) : (
+                                <p>{item.tarefa}</p>
+                            )}
+
+                            <button onClick={() => handleDeleteTask(item.id)}>
                                 <FaTrash 
                                     size={24}
                                     color='#ea3140'

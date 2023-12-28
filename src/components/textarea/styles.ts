@@ -8,4 +8,5 @@ export const TextareaMain = styled.textarea`
     outline: none;
     padding: 8px;
     font-family: inherit;
+    border: 1.5px solid #909090;
 `
